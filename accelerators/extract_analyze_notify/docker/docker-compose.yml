@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+  iotcore:
+    init: true
+    build:
+      context: .
+      dockerfile: Dockerfile-iotcore
+    container_name: ean-simulateddevice
+    image: x86_64/simulateddevice-ean:latest
+    ports:
+      - "8883:8883"
+    entrypoint: "/iotcore-accel.sh"
