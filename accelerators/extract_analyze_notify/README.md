@@ -109,7 +109,7 @@ To create or overwrite the templates, perform the following steps from a command
    aws configure 
    and selecting the region
    
-   # Create keys and certificate and save the keys and certificate arn
+   # Create keys and certificate and save the keys and certificate arn. The certificate arn is the first output
    aws iot create-keys-and-certificate \
      --set-as-active \
      --certificate-pem-outfile "certificate.pem" \

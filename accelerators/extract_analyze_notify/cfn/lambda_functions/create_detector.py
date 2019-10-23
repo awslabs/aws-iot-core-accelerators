@@ -30,9 +30,9 @@ def handler(event, context):
             logger.info(
                 "In Create "
             ) 
-            logger.info("create the iote input")
 
-            # create iotevents
+            # create iotevents input - This is supported in CFN       
+            logger.info("create the iote input")
             resp = iote_client.create_input(
                 inputName = 'IoTCoreAccelInput',
                 inputDescription = 'IoTCoreAccelInput',
@@ -51,9 +51,8 @@ def handler(event, context):
                 }
             )
 
+            # create iotevents detector model - This is supported in CFN
             logger.info("Create the detector model for iote")
-
-            # create iotevents
             response = iote_client.create_detector_model(
                 detectorModelName = 'IoTCoreAccelDetectorModel',
                 detectorModelDefinition = {
@@ -234,8 +233,8 @@ def handler(event, context):
                 roleArn = event['ResourceProperties']['IoTEventRoleArn']
             )
 
+            #update rule action with iote input - This is not supported in CFN and hence this Lambda function
             logger.info('update rule action with iote input')
-            #update rule action with iote input
             response = iot_client.create_topic_rule(
                 ruleName='IoTCoreAccelRule',
                 topicRulePayload={
