@@ -13,5 +13,5 @@ if [ ! -d ./aws-iot-device-sdk-python ]; then
 fi
 
 # run simulated device
-printf "\nRunning Simulated Device...\n"
+printf "\n Running Simulated Device...\n"
 python simulated_device.py

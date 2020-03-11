@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: "AWS::Serverless-2016-10-31"
 
-Description: Create Extract, Analyze, and Notify (EAN) IoT Core accelerator resources and deployment.
+Description: Remote Monitoring IoT accelerator resources and deployment.
 
 Parameters:
   CertificateArn:
@@ -13,14 +13,14 @@ Parameters:
   ThingName:
     Description: An IOT Thing to be created.
     Type: String
-    Default: IoTCoreAccelThing      
+    Default: IoTRmAccelThing      
 
 Resources:
         
-  PolicyIoTCoreAccelPipelinePolicy:
+  PolicyIoTRmAccelPipelinePolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: "IoTCoreAccelPipelinePolicy"
+      ManagedPolicyName: "IoTRmAccelPipelinePolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -33,12 +33,12 @@ Resources:
             Effect: "Allow"
             Action:
               - "iotevents:BatchPutMessage"
-            Resource: "arn:aws:iotevents:*:*:input/IoTCoreAccelInput"
+            Resource: "arn:aws:iotevents:*:*:input/IoTRmAccelInput"
           -
             Effect: "Allow"
             Action:
               - "iotanalytics:BatchPutMessage"
-            Resource: "arn:aws:iotanalytics:*:*:channel/iotcore_accel_data_channel"
+            Resource: "arn:aws:iotanalytics:*:*:channel/iot_rm_accel_data_channel"
           -
             Effect: "Allow"
             Action:
@@ -56,10 +56,10 @@ Resources:
               - "arn:aws:logs:*:948909324524:log-group:*:log-stream:*"
               - "arn:aws:logs:*:*:*"
             
-  RoleIoTCoreAccelPipelineRole:
+  RoleIoTRmAccelPipelineRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: IoTCoreAccelPipelineRole
+      RoleName: IoTRmAccelPipelineRole
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -71,7 +71,7 @@ Resources:
           Action:
           - sts:AssumeRole
       ManagedPolicyArns:
-        - Ref: PolicyIoTCoreAccelPipelinePolicy
+        - Ref: PolicyIoTRmAccelPipelinePolicy
         - arn:aws:iam::aws:policy/AmazonSNSFullAccess
 
   LambdaExecutionRole:
@@ -116,63 +116,63 @@ Resources:
             - iam:PassRole
             Resource: "*"
         
-  IoTCoreAccelDataChannel:
+  IoTRmAccelDataChannel:
     Type: "AWS::IoTAnalytics::Channel"
     Properties:
-      ChannelName: "iotcore_accel_data_channel"
+      ChannelName: "iot_rm_accel_data_channel"
       RetentionPeriod:
         Unlimited: True
 
-  IoTCoreAccelDataDatastore:
+  IoTRmAccelDataDatastore:
     Type: "AWS::IoTAnalytics::Datastore"
     Properties:
-      DatastoreName: "iotcore_accel_data_datastore"
+      DatastoreName: "iot_rm_accel_data_datastore"
       RetentionPeriod:
         Unlimited: True
 
-  IoTCoreAccelDataPipeline:
+  IoTRmAccelDataPipeline:
     Type: "AWS::IoTAnalytics::Pipeline"
     Properties:
-      PipelineName: "iotcore_accel_data_pipeline"
+      PipelineName: "iot_rm_accel_data_pipeline"
       PipelineActivities:
         -
           Channel:
-            ChannelName: "iotcore_accel_data_channel"
-            Name: "iotcore_accel_data_channel"
-            Next: "iotcore_accel_data_datastore"
+            ChannelName: "iot_rm_accel_data_channel"
+            Name: "iot_rm_accel_data_channel"
+            Next: "iot_rm_accel_data_datastore"
           Datastore:
-            DatastoreName: "iotcore_accel_data_datastore"
-            Name: "iotcore_accel_data_datastore"
+            DatastoreName: "iot_rm_accel_data_datastore"
+            Name: "iot_rm_accel_data_datastore"
 
-  IoTCoreAccelDatasetReporting:
+  IoTRmAccelDatasetReporting:
     Type: "AWS::IoTAnalytics::Dataset"
     Properties:
-      DatasetName: "iotcore_accel_data_dataset"
+      DatasetName: "iot_rm_accel_data_dataset"
       Actions:
         -
           ActionName: "SqlAction"
           QueryAction:
-            SqlQuery: "select * from iotcore_accel_data_datastore"
+            SqlQuery: "select * from iot_rm_accel_data_datastore"
       Triggers:
         -
           Schedule:
             ScheduleExpression: "cron(0 * * * ? *)"
-    DependsOn: IoTCoreAccelDataDatastore
+    DependsOn: IoTRmAccelDataDatastore
     
-  IoTCoreAccelGatewayRule:
+  IoTRmAccelGatewayRule:
     Type: AWS::IoT::TopicRule
     Properties:
-      RuleName: "IoTCoreAccelGatewayRule"
+      RuleName: "IoTRmAccelGatewayRule"
       TopicRulePayload:
         Description: "Routes device data for storage."
-        Sql: SELECT *, parse_time("yyyy-MM-dd'T'HH:mm:ss.SSSZ", timestamp()) as RealTime FROM 'iotcore_accelerator'
+        Sql: SELECT *, parse_time("yyyy-MM-dd'T'HH:mm:ss.SSSZ", timestamp()) as RealTime FROM 'iot_rm_accelerator'
         AwsIotSqlVersion: "2016-03-23"
         RuleDisabled: False
         Actions:
           - IotAnalytics:
-              ChannelName: "iotcore_accel_data_channel"
+              ChannelName: "iot_rm_accel_data_channel"
               RoleArn:
-                Fn::GetAtt: [ RoleIoTCoreAccelPipelineRole, "Arn" ]
+                Fn::GetAtt: [ RoleIoTRmAccelPipelineRole, "Arn" ]
 
   IoTThing:
     # Resource creates thing, certificate key pair, IoT policy, and associates all
@@ -197,8 +197,8 @@ Resources:
     Type: Custom::IoTDetector
     Properties:
       ServiceToken: !GetAtt CreateIoTDetectorFunction.Arn
-      IoTEventRoleArn: !GetAtt RoleIoTCoreAccelPipelineRole.Arn
-      SNSArn: !Ref IoTCoreAccelSNSEmail
+      IoTEventRoleArn: !GetAtt RoleIoTRmAccelPipelineRole.Arn
+      SNSArn: !Ref IoTRmAccelSNSEmail
   CreateIoTDetectorFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -211,10 +211,10 @@ Resources:
       MemorySize: 128
       CodeUri: ./lambda_functions
             
-  IoTCoreAccelSNSEmail:
+  IoTRmAccelSNSEmail:
     Type: AWS::SNS::Topic
     Properties:
       Subscription:
         - Endpoint: !Ref SNSEmail
           Protocol: email
-      TopicName: "IoTCoreAccelSNSEmail"
+      TopicName: "IoTRmAccelSNSEmail"

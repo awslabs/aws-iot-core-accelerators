@@ -34,8 +34,8 @@ def handler(event, context):
             # create iotevents input - This is supported in CFN       
             logger.info("create the iote input")
             resp = iote_client.create_input(
-                inputName = 'IoTCoreAccelInput',
-                inputDescription = 'IoTCoreAccelInput',
+                inputName = 'IoTRmAccelInput',
+                inputDescription = 'IoTRmAccelInput',
                 inputDefinition = {
                     'attributes': [
                         {
@@ -54,7 +54,7 @@ def handler(event, context):
             # create iotevents detector model - This is supported in CFN
             logger.info("Create the detector model for iote")
             response = iote_client.create_detector_model(
-                detectorModelName = 'IoTCoreAccelDetectorModel',
+                detectorModelName = 'IoTRmAccelDetectorModel',
                 detectorModelDefinition = {
                 'states': [
                     {
@@ -98,7 +98,7 @@ def handler(event, context):
                                 },
                                 {
                                     "eventName": "ErrorDataOnNormal",
-                                    "condition": "$input.IoTCoreAccelInput.deviceData > 1023",                                   
+                                    "condition": "$input.IoTRmAccelInput.deviceData > 1023",                                   
                                     "actions": [
                                         {
                                             "setVariable": {
@@ -110,7 +110,7 @@ def handler(event, context):
                                 },
                                 {
                                     "eventName": "GoodDataOnNormal",
-                                    "condition": "$input.IoTCoreAccelInput.deviceData <= 1023",                                    
+                                    "condition": "$input.IoTRmAccelInput.deviceData <= 1023",                                    
                                     "actions": [
                                         {
                                             "setVariable": {
@@ -228,7 +228,7 @@ def handler(event, context):
                 ],
                 "initialStateName": "NormalState"
                 },
-                detectorModelDescription = 'Detector Model for IoT Core Accel',
+                detectorModelDescription = 'Detector Model for IoT RM Accel',
                 key = 'deviceID',
                 roleArn = event['ResourceProperties']['IoTEventRoleArn']
             )
@@ -236,14 +236,14 @@ def handler(event, context):
             #update rule action with iote input - This is not supported in CFN and hence this Lambda function
             logger.info('update rule action with iote input')
             response = iot_client.create_topic_rule(
-                ruleName='IoTCoreAccelRule',
+                ruleName='IoTRmAccelRule',
                 topicRulePayload={
-                    'sql': "select * from 'iotcore_accelerator'",
-                    'description': 'Routes IoTCoreAccel data for processing.',
+                    'sql': "select * from 'remote_monitoring'",
+                    'description': 'Routes IoTRmAccel data for processing.',
                     'actions': [
                         {
                             'iotEvents': {
-                                'inputName': 'IoTCoreAccelInput',
+                                'inputName': 'IoTRmAccelInput',
                                 'roleArn': event['ResourceProperties']['IoTEventRoleArn']
                             }
                         },
@@ -266,17 +266,17 @@ def handler(event, context):
 
             #delete topic rule
             response = iot_client.delete_topic_rule(
-                ruleName='IoTCoreAccelRule'
+                ruleName='IoTRmAccelRule'
             )
 
             #delete detector
             response = iote_client.delete_detector_model(
-                detectorModelName='IoTCoreAccelDetectorModel'
+                detectorModelName='IoTRmAccelDetectorModel'
             )
             
             #delete input
             response = iote_client.delete_input(
-                inputName='IoTCoreAccelInput'
+                inputName='IoTRmAccelInput'
             )            
             
             result = cfnresponse.SUCCESS   

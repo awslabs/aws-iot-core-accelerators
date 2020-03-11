@@ -37,13 +37,13 @@ mqttc.json_encode=json_encode
 def send():
 #Declaring our variables
     message ={
-        "deviceType": "IoTCore_Accelerator",
+        "deviceType": "RM_Accelerator",
         "deviceID": "AWS98765",
         'deviceData': random.randint(1, 4098)
     }    
     #Encoding into JSON
     message = mqttc.json_encode(message)
-    mqttc.publish("iotcore_accelerator", message, 0)
+    mqttc.publish("remote_monitoring", message, 0)
     print "Message Published " + message
 
 #Connect to the gatewaydevice

@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+  rm_device:
+    init: true
+    build:
+      context: .
+      dockerfile: Dockerfile-rm
+    container_name: rm-simulateddevice
+    image: x86_64/simulateddevice-rm:latest
+    ports:
+      - "8883:8883"
+    entrypoint: "/rm-accel.sh"

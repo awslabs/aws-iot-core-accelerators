@@ -1,8 +1,8 @@
-# Extract, Analyze, and Notify
+# Remote Monitoring
 
-This IoT Events accelerator demonstrates how to *extract* data from a local device, *analyze* on the cloud, and *notify* (EAN) using a SNS notification system.
+This IoT Events accelerator demonstrates how to *remotely* monitor a device and notify using a SNS notification system if there are issues with the device.
 
-Common use cases for EAN include:
+Common use cases for Remote Monitoring include:
 
 - Receiving data from sensors.
 - Looking for data pattern.
@@ -11,9 +11,9 @@ Common use cases for EAN include:
 - Wait atleast 120 seconds before sending next error.
 - Store data on IoT Analytics, so we can analyze sensor performance using QuickSight.
 
-## EAN Accelerator Use Case
+## Remote Monitoring Accelerator Use Case
 
-Imagine we have equipment in the lab that we want to monitor for performance. We can load the data to the cloud and use IoT Events to quickly monitor for abnormal performance. If abnormal perfomance is detected (5 consecutive bad data), an SNS message is sent. If the device does not send data for 120 seconds, notify user vis SNS.
+Imagine we have equipment in the lab that we want to monitor for performance. We can load the data to the cloud and use IoT Events to quickly monitor for abnormal performance. If abnormal perfomance is detected (5 consecutive bad data), an SNS message is sent. If the device does not send data for 120 seconds, notify user via SNS.
 
 Finally, individual records are stored in IoT Analytics with a time stamp so that we can analyze the dataset using QuickSight.
 
@@ -22,34 +22,34 @@ The design is composed of two main parts:
 * The source - A sensor that generates random data between 0 and 4096 (12 bits). This is implemented as a docker container on the local computer.
 * AWS Cloud - The destination for the data - AWS IoT topics routes the data to AWS IoT Events for decision making and SNS notification on bad events or no data received and AWS IoT Analytics for storage and analysis using QuickSight.
 
-![EAN Solution Diagram](docs/ean_overview.png)
+![Remote Monitoring Solution Diagram](docs/rm_overview.png)
 
 The  processing flow of the accelerator is:
 
-1. **Extract** - This data is sent from the IoT device to the cloud using MQTT. The IoT Thing created and registered on the cloud receives the data. The data is routed via IoT Rules to the IoT Events and IoT Analytics.
+1. **Remote** - The data from the remote device is sent to the cloud using MQTT. The IoT Thing created and registered on the cloud receives the data. The data is routed via IoT Rules to the IoT Events and IoT Analytics.
 
-2. **Analyze** - The data analysis is done in the Detector Model of IoT Events. The Detector Model has a state machine which looks for 5 consecutive data out of range. Once the data starts coming in to the Detector Model, a timer is started to monitor the frequency of data coming in. The data is also sent with time stamp to IoT Analytics which can be analyzed using QuickSight.
+2. **Monitor** - The monitoring is done in the Detector Model of IoT Events. The Detector Model has a state machine which looks for 5 consecutive data out of range. Once the data starts coming in to the Detector Model, a timer is started to monitor the frequency of data coming in. The data is also sent with time stamp to IoT Analytics which can be analyzed using QuickSight.
 
 3. **Notify** - The detector model in IoTEvents is connected to SNS. A SNS notification is sent to subscribers if  there is a error condition (5 consecutive bad data or no new data for 120 seconds).
 
 ## Design Pattern
 
-The entire extract and analysis is done utilizing AWS IoT components. IoT Thing with a valid certificate is created which receives data using MQTT connection from a device. The data is routed to IoT Events using IoT Rules. The IoT Events has a state machine which performs a logical check on the incoming data. On Error, a SNS notification is sent to the registered subscribers. IoT Rules is also used to route data to IoT Analytics where the data is saved for future anaysis using QuickSight.
+The entire remote monitoring is done utilizing AWS IoT components. IoT Thing with a valid certificate is created which receives data using MQTT connection from a device. The data is routed to IoT Events using IoT Rules. The IoT Events has a state machine which performs a logical check on the incoming data. On Error, a SNS notification is sent to the registered subscribers. IoT Rules is also used to route data to IoT Analytics where the data is saved for future anaysis using QuickSight.
 
 
 ## Folder Structure
 
 ```text
-extract_analyze_notify/
+remote_monitoring/
 ├── README.md                          <-- This file!
 ├── cfn
-│   ├── ean_accelerator-INPUT.cfn.yaml <-- CloudFormation template
+│   ├── rm_accelerator-INPUT.cfn.yaml <-- CloudFormation template
 │   └── lambda_functions
 ├── docker
 │   ├── certs
-│   ├── Dockerfile-iotcore
+│   ├── Dockerfile-rm
 │   ├── docker-compose.yml
-│   ├── iotcore-accel.sh
+│   ├── rm-accel.sh
 │   ├── simulated_device.py
 ├── docs
 
@@ -92,7 +92,7 @@ The CloudFormation template does most of the heavy lifting. Prior to running, ea
 
 To create or overwrite the templates, perform the following steps from a command line or terminal session:
 
-1. Clone the repository `git clone https://github.com/awslabs/aws-iot-core-accelerators.git` and change to `aws-iot-core-accelerators/accelerators/extract_analyze_notify/cfn`, where this README.md file is located.
+1. Clone the repository `git clone https://github.com/awslabs/aws-iot-core-accelerators.git` and change to `aws-iot-core-accelerators/accelerators/remote_monitoring/cfn`, where this README.md file is located.
 
 1. Create the CloudFormation output file using the AWS CLI.  Using the commands below, you can either preset the \$AWS_PROFILE, \$REGION, and \$S3_BUCKET variables, or reference those directly via the `aws cloudformation package` command. The result of that command will be an *OUTPUT* CloudFormation template file, along with the packaged Lambda functions being copied to the S3 bucket. The `AWS_PROFILE` contains the credentials, account details, and optionally region to create the CloudFormation stack.
 
@@ -118,16 +118,16 @@ To create or overwrite the templates, perform the following steps from a command
    
    # Clean up any previously created files
    rm *-OUTPUT.yaml
-   aws cloudformation package --template-file ean_accelerator-INPUT.cfn.yaml --output-template-file ean_accelerator-OUTPUT.yaml --s3-bucket $S3_BUCKET --profile $AWS_PROFILE --region $REGION
+   aws cloudformation package --template-file rm_accelerator-INPUT.cfn.yaml --output-template-file rm_accelerator-OUTPUT.yaml --s3-bucket $S3_BUCKET --profile $AWS_PROFILE --region $REGION
      
-   # If using the AWS Console, upload the ean_accelerator-OUTPUT.yaml and continue with the parameters.
+   # If using the AWS Console, upload the rm_accelerator-OUTPUT.yaml and continue with the parameters.
    # Below are the steps to deploy via the command line.
      
    # To deploy back-end stack from CLI (change --stack-name and --parameter-overrides to expected values)
    aws cloudformation deploy \
      --region $REGION \
-     --stack-name iot-core-accelerator \
-     --template ean_accelerator-OUTPUT.yaml \
+     --stack-name rm-accelerator \
+     --template rm_accelerator-OUTPUT.yaml \
      --capabilities CAPABILITY_NAMED_IAM\
      --parameter-overrides \
      CertificateArn="certificate ARN from prerequisites"  \
@@ -137,7 +137,7 @@ To create or overwrite the templates, perform the following steps from a command
    # Output of stack deploy command:
    Waiting for changeset to be created..
    Waiting for stack create/update to complete
-   Successfully created/updated stack - iot-core-accelerator
+   Successfully created/updated stack - rm-accelerator
    ```
 
 At this point, all resources have been created.
@@ -160,14 +160,14 @@ At this point, the Docker configuration has the details needed to start the cont
 
 ```bash
 $ docker-compose up --build
-Building iotcore
+Building rm_device
 Step 1/9 : FROM python 2.7
 ...
-Successfully tagged x86_64/simulateddevice-ean:latest
-Creating ean-simulateddevice ... done
-Attaching to ean-simulateddevice
-ean-simulateddevice | Installing AWS SDK
-ean-simulateddevice | Cloning into 'aws-iot-device-sdk-python'...
+Successfully tagged x86_64/simulateddevice-rm:latest
+Creating rm-simulateddevice ... done
+Attaching to rm-simulateddevice
+rm-simulateddevice | Installing AWS SDK
+rm-simulateddevice | Cloning into 'aws-iot-device-sdk-python'...
 ```
 To verify operation, you can look at the iotcore_accel_data_dataset for data being stored in IoT Analytics.
 
@@ -182,6 +182,3 @@ The data can be visualized by using Quicksight easily. Open the QuickSight dashb
   Pick iotcore_accel_data_dataset
   Click Create data source
   Click Visualize
-
-
-
